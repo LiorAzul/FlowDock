@@ -14,7 +14,7 @@ struct AppTile: View {
     private var scale: CGFloat { max(0.78, 1.0 - CGFloat(index) * 0.025) }
     private var tileW: CGFloat { 93 * scale }
     private var tileH: CGFloat { 57 * scale }
-    private var badgeSize: CGFloat { 16 * scale }
+    private var badgeSize: CGFloat { 20 * scale }
 
     var body: some View {
         // Window preview
@@ -37,8 +37,8 @@ struct AppTile: View {
         )
         // Badge bottom-left, sticking out
         .overlay(
-            appBadge.offset(x: -5, y: 5),
-            alignment: .bottomLeading
+            appBadge.offset(x: isVertical ? -5 : -3, y: isVertical ? 5 : -3),
+            alignment: isVertical ? .bottomLeading : .bottomTrailing
         )
         // Strong shadow underneath
         .shadow(color: .black.opacity(0.4), radius: 10, y: 6)
