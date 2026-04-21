@@ -7,12 +7,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let capturer = WindowCapturer()
     private let panelManager = FlowDockPanelManager()
     private let menuBar = MenuBarManager()
+    private let permissions = PermissionsManager()
+    private let signing = SigningManager()
+    private lazy var onboarding = OnboardingWindowController(
+        permissions: permissions, signing: signing
+    )
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        requestPermissions()
-
-        panelManager.positionMode = menuBar.currentMode
-
         menuBar.setup()
         menuBar.onPositionChanged = { [weak self] mode in
             guard let self else { return }
@@ -20,21 +21,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.setContent()
         }
 
+        permissions.refresh()
+        signing.refresh()
+
+        let signingOK = signing.status.isStable || signing.userSkipped
+        if permissions.allGranted && signingOK {
+            startDock()
+        } else {
+            onboarding.onAllGranted = { [weak self] in self?.startDock() }
+            onboarding.show()
+        }
+    }
+
+    private func startDock() {
+        panelManager.positionMode = menuBar.currentMode
         capturer.start(tracker: tracker)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             self?.setContent()
             self?.panelManager.show()
-        }
-    }
-
-    private func requestPermissions() {
-        let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
-        let _ = AXIsProcessTrustedWithOptions(options)
-
-        Task {
-            let _ = try? await SCShareableContent
-                .excludingDesktopWindows(true, onScreenWindowsOnly: true)
         }
     }
 
